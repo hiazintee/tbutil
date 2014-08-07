@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/nsf/termbox-go"
+	"github.com/hiazintee/tbutil/testing/data"
 	"strconv"
 )
 
@@ -36,7 +37,7 @@ func drawHline(line int, char rune) {
 // constisting of str.
 func drawVline(col int, char rune) {
 	_, height := termbox.Size() // width, heigth
-	for line := 0; line < height-2; line++ {
+	for line := 0; line < height-1; line++ {
 		drawat(line, col, char)
 	}
 }
@@ -48,15 +49,15 @@ func drawBorder() {
 
 	// draw border
 	drawHline(0, lineChar)
-	drawHline(height-2, lineChar)
+	drawHline(height-1, lineChar)
 	drawVline(0, verticalChar)
 	drawVline(width-1, verticalChar)
 
 	// draw coners
 	drawat(0, 0, crossChar)              // left upper corner
 	drawat(0, width-1, crossChar)        // right upper corner
-	drawat(height-2, 0, crossChar)       // left lower corner
-	drawat(height-2, width-1, crossChar) // right lower corner
+	drawat(height-1, 0, crossChar)       // left lower corner
+	drawat(height-1, width-1, crossChar) // right lower corner
 
 }
 
@@ -65,24 +66,27 @@ func printTitle(title string) {
 	print_tb(1, width/2-len(title)/2, title)
 }
 
-func printResult(results []string, skipIndex, skipColumns int) {
+func printResult(results []string, startLine, skipIndex, skipColumns int) {
 	width, height := termbox.Size()
-	startLine, StartCol := 9, 5
+	// StartCol := 5
+	StartCol := 1
 	MaxLine, MaxCol := height-startLine-1, width-StartCol-1
 
+        rlinecount := len(results)
+        // this looks strange but should assemble the 
+        // formatstring %3d | %s if we have more than 99 lines of results
+        // this will be used to align the linenumber (reservce space
+        // for the largest number)
+        lineFmt := fmt.Sprintf("%%%dd |%%s",len(strconv.Itoa(rlinecount)))
+
 	for curLine := startLine; curLine < MaxLine; curLine++ {
-		// if skipIndex > len(results) {
-		if MaxLine >= curLine && skipColumns < MaxCol && skipIndex < len(results)-2 {
-			pline := results[skipIndex]
+		// if skipIndex > rlinecount) {
+		if MaxLine >= curLine && skipColumns < MaxCol && skipIndex < rlinecount-2 {
+			pline := fmt.Sprintf(lineFmt, skipIndex, results[skipIndex])
 			print_tb(curLine, StartCol, pline)
 			skipIndex += 1
 		} else {
-			msg1 := fmt.Sprintf("Index out of bound. curLine:%v skipVIndex=%v SkipColumns:%v", curLine, skipIndex, skipColumns)
-			msg2 := fmt.Sprintf("MaxLine=%v MaxCol:%v len(results):%v len(results[]):%v", MaxLine, MaxCol, len(results), len(results[skipIndex]))
-			print_tb(curLine, 3, msg1)
-			curLine += 1
-			print_tb(curLine, 3, msg2)
-			curLine += 1
+			curLine = MaxLine // end loop
 		}
 	}
 }
@@ -90,7 +94,7 @@ func printResult(results []string, skipIndex, skipColumns int) {
 // prepare_main_screen draws the main screen sections within the termbox back
 // buffer
 func prepare_main_screen() {
-	width, height := termbox.Size()
+	width, _ := termbox.Size() // width, height
 	drawBorder()
 	curLine := 2
 
@@ -101,6 +105,12 @@ func prepare_main_screen() {
 	print_tb(curLine, 1, "ResLines: 23-31/2994  ResCols: 156-236/7352 WinSize: 20 lines 70 columns")
 	curLine++
 	print_tb(curLine, 1, "")
+	curLine++
+
+	print_tb(curLine, 1, "")
+	curLine++
+
+	print_tb(curLine, 1, "Command:")
 	curLine++
 
 	drawHline(curLine, '-')
@@ -120,17 +130,8 @@ func prepare_main_screen() {
 		}
 		print_tb(curLine, i, strconv.Itoa(i%10))
 	}
+        curLine+=2
 
-	print_tb(height-1, 0, "Command: ")
-}
-
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-func draw_all(call string) {
 	result := []string{"Results: ",
 		"---------",
 		"This is just a Little bit of output to demonstrate (FAKE)!",
@@ -143,10 +144,20 @@ func draw_all(call string) {
 		"",
 		"SQL>"}
 
+	// printResult(result, curLine, 0, 0)
+	printResult(big_result, curLine, 0, 0)
+
+}
+
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func draw_all(call string) {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 	prepare_main_screen()
-
-	printResult(result, 0, 0)
 
 	/*
 		w, h := termbox.Size()
