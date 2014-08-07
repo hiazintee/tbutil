@@ -1,4 +1,4 @@
-package bsq
+package tbutil
 
 import (
 	"fmt"
